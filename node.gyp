@@ -107,7 +107,7 @@
       [ 'node_shared=="true"', {
         'node_target_type%': 'shared_library',
       }, {
-        'node_target_type%': 'executable',
+        'node_target_type%': 'shared_library',
       }],
       [ 'OS=="win" and '
         'node_use_openssl=="true" and '
@@ -137,6 +137,7 @@
 
       'sources': [
         'src/debug-agent.cc',
+		'src/delphi_intf.cpp',
         'src/async-wrap.cc',
         'src/env.cc',
         'src/fs_event_wrap.cc',
@@ -178,6 +179,7 @@
         'src/base-object.h',
         'src/base-object-inl.h',
         'src/debug-agent.h',
+		'src/delphi_intf.h',
         'src/env.h',
         'src/env-inl.h',
         'src/handle_wrap.h',
