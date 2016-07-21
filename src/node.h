@@ -184,7 +184,7 @@ NODE_EXTERN extern bool enable_fips_crypto;
 NODE_EXTERN extern bool force_fips_crypto;
 #endif
 
-NODE_EXTERN int Start(int argc, char *argv[]);
+NODE_EXTERN int Start(int argc, char *argv[], void *eng = nullptr);
 NODE_EXTERN void Init(int* argc,
                       const char** argv,
                       int* exec_argc,

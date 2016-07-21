@@ -7,6 +7,7 @@
 #include "node_version.h"
 #include "node_internals.h"
 #include "node_revert.h"
+#include "delphi_intf.h"
 
 #if defined HAVE_PERFCTR
 #include "node_counters.h"
@@ -4342,7 +4343,8 @@ void FreeEnvironment(Environment* env) {
 
 // Entry point for new node instances, also called directly for the main
 // node instance.
-static void StartNodeInstance(void* arg) {
+static void StartNodeInstance(void* arg, void* eng) {
+  using namespace Bv8;
   NodeInstanceData* instance_data = static_cast<NodeInstanceData*>(arg);
   Isolate::CreateParams params;
   ArrayBufferAllocator array_buffer_allocator;
@@ -4368,9 +4370,22 @@ static void StartNodeInstance(void* arg) {
     Locker locker(isolate);
     Isolate::Scope isolate_scope(isolate);
     HandleScope handle_scope(isolate);
-    IsolateData isolate_data(isolate, instance_data->event_loop(),
+	IsolateData isolate_data(isolate, instance_data->event_loop(),
                              array_buffer_allocator.zero_fill_field());
-    Local<Context> context = Context::New(isolate);
+    auto global = Local<ObjectTemplate>();
+	if (eng) {
+		IEngine	* engine = static_cast<IEngine *>(eng);
+		global = engine->MakeGlobalTemplate(isolate);
+		isolate->SetData(0, engine);
+	}
+    Local<Context> context = Context::New(isolate, NULL, global);
+	if (eng) {
+		IEngine	* engine = static_cast<IEngine *>(eng);
+		auto globalObject = context->Global()->GetPrototype()->ToObject(context).ToLocalChecked();
+		globalObject->SetInternalField(0, v8::External::New(isolate, engine->globObject));
+		globalObject->SetInternalField(1, v8::External::New(isolate, engine->globalTemplate->DClass));
+	}    
+
     Context::Scope context_scope(context);
     Environment env(&isolate_data, context);
     env.Start(instance_data->argc(),
@@ -4441,7 +4456,7 @@ static void StartNodeInstance(void* arg) {
   isolate = nullptr;
 }
 
-int Start(int argc, char** argv) {
+int Start(int argc, char** argv, void* eng) {
   PlatformInit();
 
   CHECK_GT(argc, 0);
@@ -4478,7 +4493,7 @@ int Start(int argc, char** argv) {
                                    exec_argc,
                                    exec_argv,
                                    use_debug_agent);
-    StartNodeInstance(&instance_data);
+    StartNodeInstance(&instance_data, eng);
     exit_code = instance_data.exit_code();
   }
   V8::Dispose();
