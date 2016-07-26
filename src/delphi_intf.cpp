@@ -185,7 +185,7 @@ inline char * IEngine::RunString(char * code, char * exeName) {
 	int argc = 0;
 	name = exeName;
 	auto argv = MakeArgs(code, false, argc);
-	node::Start(argc, argv.data(), this);
+	node::Start(argc, argv.data(), [this](int code) {this->SetErrorCode(code); }, this);
 	/*run_string_result = ReadCode(code);
 	run_string_result.push_back(0);
 	return run_string_result.data();*/
@@ -197,8 +197,8 @@ char * IEngine::RunFile(char * fName, char * exeName)
 	int argc = 0;
 	name = exeName;
 	auto argv = MakeArgs(fName, true, argc);
-	node::Start(argc, argv.data(), this);
-	return "1";
+	node::Start(argc, argv.data(), [this](int code) {this->SetErrorCode(code); }, this);
+	return nullptr;
 }
 
 void IEngine::SetDebug(bool debug)
@@ -209,6 +209,16 @@ void IEngine::SetDebug(bool debug)
 bool IEngine::DebugMode()
 {		
 	return debugMode;
+}
+
+int IEngine::ErrorCode()
+{
+	return errCode;
+}
+
+void IEngine::SetErrorCode(int code)
+{
+	errCode = code;
 }
 
 void IEngine::InitializeGlobal()

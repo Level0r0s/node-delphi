@@ -4456,7 +4456,8 @@ static void StartNodeInstance(void* arg, void* eng) {
   isolate = nullptr;
 }
 
-int Start(int argc, char** argv, void* eng) {
+int Start(int argc, char** argv, std::function<void(int)> func, void* eng) {
+	exit = func;
   PlatformInit();
 
   CHECK_GT(argc, 0);
@@ -4505,6 +4506,5 @@ int Start(int argc, char** argv, void* eng) {
 
   return exit_code;
 }
-
 
 }  // namespace node

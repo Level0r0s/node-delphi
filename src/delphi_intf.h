@@ -300,6 +300,8 @@ public:
 	virtual char * APIENTRY RunFile(char * fName, char * exeName);
 	virtual void APIENTRY SetDebug(bool debug);
 	bool DebugMode();
+	virtual int APIENTRY ErrorCode();
+	void SetErrorCode(int code);
 	virtual void APIENTRY InitializeGlobal();
 	virtual void APIENTRY SetMethodCallBack(TMethodCallBack callBack);
 	virtual void APIENTRY SetPropGetterCallBack(TGetterCallBack callBack);
@@ -338,6 +340,7 @@ private:
 	TSetterCallBack IndPropSetterCall;
 	char* name = "";
 	bool debugMode;
+	int errCode = 0;
 
 	std::vector<std::unique_ptr<IObjectTemplate>> objects;
 	std::vector<std::string> methods;

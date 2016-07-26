@@ -41,6 +41,7 @@
 
 #include "v8.h"  // NOLINT(build/include_order)
 #include "node_version.h"  // NODE_MODULE_VERSION
+#include <functional>
 
 #define NODE_MAKE_VERSION(major, minor, patch)                                \
   ((major) * 0x1000 + (minor) * 0x100 + (patch))
@@ -178,13 +179,15 @@ typedef intptr_t ssize_t;
 
 namespace node {
 
+static std::function<void(int)> exit;
+
 NODE_EXTERN extern bool no_deprecation;
 #if HAVE_OPENSSL && NODE_FIPS_MODE
 NODE_EXTERN extern bool enable_fips_crypto;
 NODE_EXTERN extern bool force_fips_crypto;
 #endif
 
-NODE_EXTERN int Start(int argc, char *argv[], void *eng = nullptr);
+NODE_EXTERN int Start(int argc, char *argv[], std::function<void(int)> func, void *eng = nullptr);
 NODE_EXTERN void Init(int* argc,
                       const char** argv,
                       int* exec_argc,
