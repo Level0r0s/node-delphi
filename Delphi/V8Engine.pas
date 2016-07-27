@@ -787,7 +787,7 @@ begin
   Result := '';
   AnsiStr := AnsiString(code);
   FEngine.InitializeContext;
-  FEngine.SetDebug(False);
+//  FEngine.SetDebug(False);
   CharPtr := FEngine.RunFile(PansiChar(AnsiStr), PansiChar(AnsiString(appPath)));
   if Assigned(CharPtr) then  
     Result := string(CharPtr);
