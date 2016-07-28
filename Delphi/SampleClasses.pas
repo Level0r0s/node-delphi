@@ -6,6 +6,7 @@ uses ScriptInterface, Generics.Collections, RTTI;
 
 type
 
+  //just vectors
   TVector2 = record
     x, y: double;
   end;
@@ -34,15 +35,19 @@ type
   TVectorList = class(TObjectList<TVector3>)
   end;
 
+  //class with callback
   TCallBackClass = class
   private
-    FOnClick: TOptionCallback;
-    procedure SetOnClick(const Value: TOptionCallback);
+    FOnValueChange: TOptionCallback;
+    FValue: double;
+    procedure SetOnValueChange(const Value: TOptionCallback);
+    procedure SetValue(const Value: double);
   public
-    procedure MakeClick;
-    property OnClick: TOptionCallback read FOnClick write SetOnClick;
+    property Value: double read FValue write SetValue;
+    property OnValueChange: TOptionCallback read FOnValueChange write SetOnValueChange;
   end;
 
+  //some classes
   TSomeObject = class
   private
     FSomeValue: Double;
@@ -50,10 +55,19 @@ type
     property Value: Double read FSomeValue write FSomeValue;
   end;
 
+  TSomeChild = class(TSomeObject)
+  end;
+
+  //some helpers
   TSomeObjectHelper = class(TJSClassExtender)
   private
   public
     function ValueSqr: double;
+  end;
+
+  TSomeChildHelper = class(TJSClassExtender)
+  public
+    function ValueX2:Double;
   end;
 
 
@@ -111,21 +125,16 @@ end;
 
 { TCallBackClass }
 
-procedure TCallBackClass.MakeClick;
-var
-  opt: TScriptOption;
+procedure TCallBackClass.SetOnValueChange(const Value: TOptionCallback);
 begin
-  opt := TScriptOption.Create;
-  try
-    FOnClick.Call(opt);
-  finally
-    opt.Free;
-  end;
+  FOnValueChange := Value;
 end;
 
-procedure TCallBackClass.SetOnClick(const Value: TOptionCallback);
+procedure TCallBackClass.SetValue(const Value: double);
 begin
-  FOnClick := Value;
+  if FOnValueChange.Assigned then
+    FOnValueChange.Call(nil);
+  FValue := Value;
 end;
 
 { TSomeObjectHelper }
@@ -135,6 +144,15 @@ begin
   Result := -1;
   if Source is TSomeObject then
     Result := Sqr((Source as TSomeObject).Value);
+end;
+
+{ TSomeChildHelper }
+
+function TSomeChildHelper.ValueX2: Double;
+begin
+  Result := -1;
+  if Source is TSomeObject then
+    Result := (Source as TSomeObject).Value * 2;
 end;
 
 end.

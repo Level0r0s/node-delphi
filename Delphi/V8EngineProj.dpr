@@ -23,9 +23,11 @@ type
     FEng: TJSEngine;
     FSys: TJSSystemNamespace;
     FSomeHelper: TSomeObjectHelper;
+    FChildHelper: TSomeChildHelper;
     function GetSystem: TJSSystemNamespace;
   public
     constructor Create(Eng: TJSEngine);
+    destructor Destroy;
     procedure log(str: string);
     property system: TJSSystemNamespace read GetSystem;
     [TGCAttr]
@@ -35,9 +37,11 @@ type
     [TGCAttr]
     function NewVector(): TVector3; overload;
     [TGCAttr]
-    function NewCallBackClass: TCallBackClass;
+    function NewCallBack: TCallBackClass;
     [TGCAttr]
     function NewSomeObject: TSomeObject;
+    [TGCAttr]
+    function NewSomeChild: TSomeChild;
     function Length(vec: TVector3): double;
     function Multiplicate(arg1, arg2: double; arg3: double = 1.0): double;
   end;
@@ -48,7 +52,15 @@ begin
   FEng := Eng;
   FSys := Eng.GetSystem;
   FSomeHelper := TSomeObjectHelper.Create;
+  FChildHelper := TSomeChildHelper.Create;
   FEng.RegisterHelper(TSomeObject, FSomeHelper);
+  FEng.RegisterHelper(TSomeChild, FChildHelper);
+end;
+
+destructor TGlobalNamespace.Destroy;
+begin
+  FreeAndNil(FSomeHelper);
+  FreeAndNil(FChildHelper);
 end;
 
 function TGlobalNamespace.GetSystem: TJSSystemNamespace;
@@ -66,9 +78,14 @@ begin
   Result := arg1 * arg2 * arg3;
 end;
 
-function TGlobalNamespace.NewCallBackClass: TCallBackClass;
+function TGlobalNamespace.NewCallBack: TCallBackClass;
 begin
   Result := TCallBackClass.Create;
+end;
+
+function TGlobalNamespace.NewSomeChild: TSomeChild;
+begin
+  Result := TSomeChild.Create;
 end;
 
 function TGlobalNamespace.NewSomeObject: TSomeObject;
@@ -98,12 +115,10 @@ end;
 
 
 var
-  s: TStrings;
   Global: TGlobalNamespace;
   Eng: TJSEngine;
 begin
-//  Writeln('===========TEST==========');
-  S := TStringList.Create;
+  Writeln('===========TEST==========');
   try
     Math.SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow,
       exUnderflow, exPrecision]);
@@ -111,14 +126,9 @@ begin
     Global := TGlobalNamespace.Create(Eng);
     try
       Eng.AddGlobal(Global);
-//      Writeln(GetCurrentDir);
-//      if FileExists('EngineTestScript.js') then
-//        s.LoadFromFile('EngineTestScript.js')
-//      else
-//        s.LoadFromFile('..\..\ScriptApp\Win32\Debug\EngineTestScript.js');
-      Writeln(s.Text);
-//      Eng.RunScript('"' + s.Text + '"', ParamStr(0));
-      Eng.RunFile('EngineTestScript.js', ParamStr(0));
+      ///
+      Eng.Debug := True;
+      Eng.RunFile('Test.js', ParamStr(0));
       // <<----send log to user-----
       if Eng.Log.Count > 0 then
       begin
@@ -134,7 +144,6 @@ begin
   except
     writeln('err');
   end;
-  s.Free;
   Writeln;
   Writeln('Press Enter for Exit');
   Readln;

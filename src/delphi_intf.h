@@ -1,9 +1,7 @@
 #pragma once
 
 #include "v8.h"
-//#include "env.h"
 #include "node.h"
-#include "node_mutex.h"
 #include "libplatform\libplatform.h"
 #include <assert.h>
 #include <memory>
@@ -35,9 +33,9 @@ public:
 	virtual void* APIENTRY GetDelphiObject();
 	virtual void* APIENTRY GetDelphiClasstype();
 private:
-	v8::Isolate * iso;
+	v8::Isolate * iso = nullptr;
 	v8::Persistent<v8::Object> obj;
-	bool isDObject;
+	bool isDObject = false;
 };
 
 class IFunction : public IBazisIntf {
@@ -50,10 +48,10 @@ public:
 	virtual void APIENTRY AddArgAsObject(void * obj);
 	virtual IValue * APIENTRY CallFunction();
 private:
-	v8::Isolate * iso;
+	v8::Isolate * iso = nullptr;
 	std::vector<v8::Local<v8::Value>> argv;
 	v8::Persistent<v8::Function> func;
-	IValue * returnVal;
+	IValue * returnVal = nullptr;
 };
 
 class IArrayValues : public IBazisIntf {
@@ -65,7 +63,7 @@ public:
 private:
 	std::vector<std::unique_ptr<IValue>> values;
 	v8::Persistent<v8::Array> arr;
-	v8::Isolate * iso;
+	v8::Isolate * iso = nullptr;
 };
 
 class IRecord : public IBazisIntf {
@@ -86,7 +84,7 @@ public:
 	virtual char * APIENTRY GetStringField(char * name);
 	virtual void * APIENTRY GetObjectField(char * name);
 private:
-	v8::Isolate * iso;
+	v8::Isolate * iso = nullptr;
 	std::vector<char> run_string_result;
 };
 
@@ -116,13 +114,13 @@ public:
 	int GetIndex();
 private:
 	v8::Persistent<v8::Value> v8Value;
-	v8::Isolate * isolate;
+	v8::Isolate * isolate = nullptr;
 	std::vector<char> run_string_result;
 	IObject * obj = nullptr;
 	IArrayValues * arr = nullptr;
 	IRecord * rec = nullptr;
 	IFunction * func = nullptr;
-	int ind;
+	int ind = -1;
 };
 
 class IMethodArgs : public IBazisIntf {
@@ -146,10 +144,10 @@ public:
 	virtual IValue * APIENTRY GetArg(int index);
 	virtual void * APIENTRY GetDelphiMethod();
 private:
-	v8::Isolate * iso;
-	IRecord * recVal;
+	v8::Isolate * iso = nullptr;
+	IRecord * recVal = nullptr;
 	std::vector<std::unique_ptr<IValue>> values;
-	const v8::FunctionCallbackInfo<v8::Value>* args;
+	const v8::FunctionCallbackInfo<v8::Value>* args = nullptr;
 	std::vector<char> run_string_result;
 };
 
@@ -172,12 +170,12 @@ public:
 	virtual IRecord * APIENTRY GetGetterResultAsRecord();
 
 private:
-	v8::Isolate * iso;
-	IRecord * recVal;
-	bool IsIndexedProp;
+	v8::Isolate * iso = nullptr;
+	IRecord * recVal = nullptr;
+	bool IsIndexedProp = false;
 	std::string propName = "";
 	int propInd = -1;
-	const v8::PropertyCallbackInfo<v8::Value> * propinfo;
+	const v8::PropertyCallbackInfo<v8::Value> * propinfo = nullptr;
 	std::vector<char> run_string_result;
 };
 
@@ -198,15 +196,15 @@ public:
 	virtual char * APIENTRY GetValueAsString();
 	virtual double APIENTRY GetValueAsDouble();
 private:
-	v8::Isolate * iso;
-	bool IsIndexedProp;
+	v8::Isolate * iso = nullptr;
+	bool IsIndexedProp = false;
 	std::string propName = "";
 	int propInd = -1;
 	std::vector<char> run_string_result;
-	const v8::PropertyCallbackInfo<void> * propinfo;
-	const v8::PropertyCallbackInfo<v8::Value> * indexedPropInfo;
+	const v8::PropertyCallbackInfo<void> * propinfo = nullptr;
+	const v8::PropertyCallbackInfo<v8::Value> * indexedPropInfo = nullptr;
 	v8::Persistent<v8::Value> newVal;
-	IValue * setterVal;
+	IValue * setterVal = nullptr;
 };
 
 typedef void(APIENTRY *TMethodCallBack) (IMethodArgs * args);
@@ -254,15 +252,12 @@ public:
 	virtual void APIENTRY SetHasIndexedProps(bool hasIndProps);
 	virtual void APIENTRY SetClasstype(char* classtype);
 	virtual char * APIENTRY GetClasstype();
-	virtual void APIENTRY SetHelper(void * help);
 	virtual void APIENTRY SetParent(IObjectTemplate * parent);
 
 	std::string classtype;
-	void * DClass;
-	void * Helper = nullptr;
+	void * DClass = nullptr;
 	v8::Persistent<v8::FunctionTemplate> objTempl;
 	IObjectTemplate(std::string objclasstype, v8::Isolate * isolate);
-	void SetMethod(std::string methodName);;
 	std::vector<std::unique_ptr<IObjectProp>> props;
 	std::vector<std::string> fields;
 	std::vector<std::unique_ptr<IObjectMethod>> methods;
@@ -271,7 +266,7 @@ public:
 protected:
 	std::vector<char> runStringResult;
 private:
-	v8::Isolate * iso;
+	v8::Isolate * iso = nullptr;
 };
 
 
@@ -281,7 +276,7 @@ public:
 	~IEngine();
 	IEngine(void * DEngine);
 
-	v8::Isolate * isolate;
+	v8::Isolate * isolate = nullptr;
 	bool ReadScriptConsole();
 	std::vector<char> ReadCode(char * code);
 	bool report_exceptions = true;
@@ -312,9 +307,9 @@ public:
 	virtual void APIENTRY SetIndexedPropSetterCallBack(TSetterCallBack callBack);
 
 	v8::Persistent<v8::FunctionTemplate> glob;
-	void * globObject;
-	IObjectTemplate * globalTemplate;
-	void * DEngine;
+	void * globObject = nullptr;
+	IObjectTemplate * globalTemplate = nullptr;
+	void * DEngine = nullptr;
 
 	virtual void* GetDelphiObject(v8::Local<v8::Object> holder);
 	virtual void* GetDelphiClasstype(v8::Local<v8::Object> obj);
@@ -339,7 +334,7 @@ private:
 	TGetterCallBack IndPropGetterCall;
 	TSetterCallBack IndPropSetterCall;
 	char* name = "";
-	bool debugMode;
+	bool debugMode = false;
 	int errCode = 0;
 
 	std::vector<std::unique_ptr<IObjectTemplate>> objects;

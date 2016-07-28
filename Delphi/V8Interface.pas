@@ -136,7 +136,6 @@ type
     procedure SetHasIndexedProps(HAsIndexedProps: boolean); virtual; stdcall; abstract;
     procedure SetClasstype(classtype: PAnsiChar); virtual; stdcall; abstract;
     function GetClasstype: PAnsiChar; virtual; stdcall; abstract;
-    procedure SetHelper(helper: TObject);  virtual; stdcall; abstract;
     procedure SetParent(parent: IObjectTemplate);  virtual; stdcall; abstract;
   end;
 

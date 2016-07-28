@@ -92,7 +92,6 @@ type
 
     procedure SetGarbageCollector(const Value: TObjects);
     procedure SetClasses(const Value: TClassMap);
-    function GetRunArgs(var argc: integer): string;
     procedure SetCode(const Value: string);
     procedure SetDebug(const Value: boolean);
     procedure SetFilename(const Value: string);
@@ -254,6 +253,8 @@ begin
     begin
       methodInfo := Methods.MethodInfo;
       method := methodInfo.Method;
+//      if (method.Parent.Handle.TypeData.ClassType = TObject) then
+//        continue;
       if Assigned(method.ReturnType) and (method.ReturnType.TypeKind = tkClass) then
       begin
         ReturnClass := method.ReturnType.Handle.TypeData.ClassType;
@@ -265,6 +266,8 @@ begin
       begin
         methodInfo := methods.OverloadsInfo[i];
         method := methodInfo.Method;
+//        if (method.Parent.Handle.TypeData.ClassType = TObject) then
+//          continue;
         if Assigned(method.ReturnType) and (method.ReturnType.TypeKind = tkClass) then
         begin
           ReturnClass := method.ReturnType.Handle.TypeData.ClassType;
@@ -501,7 +504,7 @@ begin
     Result := Prop.GetValue(obj);
     if Assigned(Prop.PropertyType) then
     begin
-      ReturnType :=  Prop.PropertyType.TypeKind;
+      ReturnType := Prop.PropertyType.TypeKind;
       case ReturnType of
         tkUnknown: ;
         tkInteger: args.SetGetterResult(Result.AsInteger);
@@ -697,27 +700,6 @@ begin
   FGarbageCollector.Free;
 end;
 
-function TJSEngine.GetRunArgs(var argc: integer): string;
-begin
-  Result := '';
-  argc := 0;
-  if Debug then
-  begin
-    Inc(argc);
-    Result := Result + 'debug ';
-  end;
-  if FFilename <> '' then
-  begin
-    Inc(argc);
-    Result := Result + FFilename + ' ';
-  end
-  else if FCode <> '' then
-  begin
-    Inc(argc);
-    Result := Result + '-e ' + FCode + ' ';
-  end;
-end;
-
 class function TJSEngine.GetMethodInfo(List: TRttiMethodList;
   args: IMethodArgs): TRttiMethodInfo;
 var
@@ -787,7 +769,7 @@ begin
   Result := '';
   AnsiStr := AnsiString(code);
   FEngine.InitializeContext;
-//  FEngine.SetDebug(False);
+  FEngine.SetDebug(Debug);
   CharPtr := FEngine.RunFile(PansiChar(AnsiStr), PansiChar(AnsiString(appPath)));
   if Assigned(CharPtr) then  
     Result := string(CharPtr);
@@ -801,7 +783,7 @@ begin
   Result := '';
   AnsiStr := AnsiString(code);
   FEngine.InitializeContext;
-  FEngine.SetDebug(False);
+  FEngine.SetDebug(Debug);
   Result := string(FEngine.RunString(PansiChar(AnsiStr), PansiChar(AnsiString(appPath))));;
 end;
 
@@ -826,7 +808,7 @@ procedure TJSEngine.SetClassIntoContext(cl: TJSClass);
   end;
 
 var
-  obj: IObjectTemplate;
+  objTempl: IObjectTemplate;
   Methods: TMethodOverloadMap;
   method: TRttiMethod;
   ReturnClass: TClass;
@@ -836,19 +818,30 @@ var
   field: TRttiField;
   FieldPair: TPair<string, TRttiField>;
   i: integer;
+  helper: TJSClassExtender;
+  clParent: TClass;
 begin
   if cl.Initialized then
     Exit;
   if Assigned(FEngine) then
   begin
-    obj := FEngine.AddObject(PAnsiChar(AnsiString(cl.Ftype.ToString)), cl.FClasstype);
-    obj.SetParent(GetParent(cl.cType.ClassParent));
+    clParent := cl.cType.ClassParent;
+    while clParent <> TObject do
+    begin
+      if FJSExtenders.TryGetValue(clParent, helper) then
+        cl.AddHelper(helper);
+      clParent := clParent.ClassParent;
+    end;
+    objTempl := FEngine.AddObject(PAnsiChar(AnsiString(cl.Ftype.ToString)), cl.FClasstype);
+    objTempl.SetParent(GetParent(cl.cType.ClassParent));
     for Overloads in cl.FMethods do
     begin
       Methods := Overloads.Value;
       if Assigned(Methods.MethodInfo.Method) then
       begin
         method := Methods.MethodInfo.Method;
+//        if (method.Parent.Handle.TypeData.ClassType = TObject) then
+//          continue;
         if Assigned(method.ReturnType) and (method.ReturnType.TypeKind = tkClass) then
         begin
           ReturnClass := method.ReturnType.Handle.TypeData.ClassType;
@@ -859,25 +852,27 @@ begin
         for i := 0 to Methods.OverloadsInfo.Count - 1 do
         begin
           method := Methods.OverloadsInfo[i].Method;
+//          if (method.Parent.Handle.TypeData.ClassType = TObject) then
+//            continue;
           if Assigned(method.ReturnType) and (method.ReturnType.TypeKind = tkClass) then
           begin
             ReturnClass := method.ReturnType.Handle.TypeData.ClassType;
             AddClass(ReturnClass);
           end;
         end;
-      obj.SetMethod(PAnsiChar(AnsiString(Overloads.Key)), Methods);
+      objTempl.SetMethod(PAnsiChar(AnsiString(Overloads.Key)), Methods);
     end;
     for PropPair in cl.FProps do
     begin
       Prop := PropPair.Value;
-      obj.SetProp(PAnsiChar(AnsiString(Prop.Name)), Prop.IsReadable, Prop.IsWritable);
+      objTempl.SetProp(PAnsiChar(AnsiString(Prop.Name)), Prop.IsReadable, Prop.IsWritable);
     end;
     for FieldPair in cl.FFields do
     begin
       field := FieldPair.Value;
-      obj.SetField(PAnsiChar(AnsiString(field.Name)));
+      objTempl.SetField(PAnsiChar(AnsiString(field.Name)));
     end;
-    obj.SetHasIndexedProps(cl.FIndexedProps.Count > 0);
+    objTempl.SetHasIndexedProps(cl.FIndexedProps.Count > 0);
     cl.Initialized := True;
   end;
 end;
@@ -955,14 +950,15 @@ var
   methodInfo: TRttiMethodInfo;
   method: TRttiMethod;
   helperCType: TClass;
+  helpType: TRttiType;
 begin
   helperCType := helper.ClassType;
-  Ftype := RttiContext.GetType(helperCType);
-  MethodArr := Ftype.GetMethods;
+  helpType := RttiContext.GetType(helperCType);
+  MethodArr := helpType.GetMethods;
   for method in MethodArr do
   begin
     if (method.MethodKind in [mkProcedure, mkFunction]) and
-      (method.Visibility = mvPublic) then
+      (method.Visibility = mvPublic) and (method.Parent.Handle.TypeData.ClassType <> TObject) then
     begin
       if not FMethods.TryGetValue(method.Name, overloads) then
       begin
@@ -1015,7 +1011,7 @@ begin
   for method in MethodArr do
   begin
     if (method.MethodKind in [mkProcedure, mkFunction]) and
-      (method.Visibility = mvPublic) then
+      (method.Visibility = mvPublic) and (method.Parent.Handle.TypeData.ClassType <> TObject) then
     begin
       if not FMethods.TryGetValue(method.Name, overloads) then
       begin

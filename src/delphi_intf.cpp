@@ -641,12 +641,6 @@ char * IObjectTemplate::GetClasstype()
 {
 	runStringResult = std::vector<char>(classtype.length(), *(classtype.c_str()));
 	return runStringResult.data();
-	//classtype.
-}
-
-void IObjectTemplate::SetHelper(void * help)
-{
-	Helper = help;
 }
 
 void IObjectTemplate::SetParent(IObjectTemplate * parent)
@@ -657,10 +651,6 @@ IObjectTemplate::IObjectTemplate(std::string objclasstype, v8::Isolate * isolate
 {
 	classtype = objclasstype;
 	iso = isolate;
-}
-
-inline void IObjectTemplate::SetMethod(std::string methodName) {
-	//methods.push_back(methodName);
 }
 
 inline void IObjectProp::SetRead(bool Aread) { read = Aread; }
