@@ -27,6 +27,7 @@ type
     function GetSystem: TJSSystemNamespace;
   public
     constructor Create(Eng: TJSEngine);
+    destructor Destroy; override;
     property system: TJSSystemNamespace read GetSystem;
     [TGCAttr]
     function NewVectorList: TVectorList;
@@ -76,43 +77,31 @@ end;
 procedure TestTJSEngine.TestCallBack;
 var
   ReturnValue: string;
-  Eng: TJSEngine;
-  Glob: TTestGlobalNamespace;
 begin
-  Eng := TJSEngine.Create;
-  Glob := TTestGlobalNamespace.Create(Eng);
-  Eng.AddGlobal(Glob);
-  ReturnValue := FJSEngine.RunFile('TestCallBack.js', ParamStr(0));
-  Assert(ReturnValue = '', FJSEngine.Log.Text);
+  ReturnValue := FJSEngine.RunFile('..\scripts\TestCallBack.js', ParamStr(0));
+  FJSEngine.Log.Add('<<ReturnCode>> ' + ReturnValue);
   FJSEngine.Log.SaveToFile('TestCallBack.log');
+  Assert(ReturnValue = '0', FJSEngine.Log.Text);
 end;
 
 procedure TestTJSEngine.TestHelper;
 var
   ReturnValue: string;
-  Eng: TJSEngine;
-  Glob: TTestGlobalNamespace;
 begin
-  Eng := TJSEngine.Create;
-  Glob := TTestGlobalNamespace.Create(Eng);
-  Eng.AddGlobal(Glob);
-  ReturnValue := Eng.RunFile('TestHelper.js', ParamStr(0));
-  Assert(ReturnValue = '', Eng.Log.Text);
-  Eng.Log.SaveToFile('TestHelper.log');
+  ReturnValue := FJSEngine.RunFile('..\scripts\TestHelper.js', ParamStr(0));
+  FJSEngine.Log.Add('<<ReturnCode>> ' + ReturnValue);
+  FJSEngine.Log.SaveToFile('TestHelper.log');
+  Assert(ReturnValue = '0', FJSEngine.Log.Text);
 end;
 
 procedure TestTJSEngine.TestObjects;
 var
   ReturnValue: string;
-  Eng: TJSEngine;
-  Glob: TTestGlobalNamespace;
 begin
-  Eng := TJSEngine.Create;
-  Glob := TTestGlobalNamespace.Create(Eng);
-  Eng.AddGlobal(Glob);
-  ReturnValue := FJSEngine.RunFile('TestObjects.js', ParamStr(0));
-  Assert(ReturnValue = '', FJSEngine.Log.Text);
+  ReturnValue := FJSEngine.RunFile('..\scripts\TestObjects.js', ParamStr(0));
+  FJSEngine.Log.Add('<<ReturnCode>> ' + ReturnValue);
   FJSEngine.Log.SaveToFile('TestObjects.log');
+  Assert(ReturnValue = '0', FJSEngine.Log.Text);
 end;
 
 { TTestGlobalNamespace }
@@ -125,6 +114,12 @@ begin
   FEng.RegisterHelper(TSomeObject, FHelper);
   FEng.RegisterHelper(TSomeChild, FChildHelper);
   FSys := Eng.GetSystem;
+end;
+
+destructor TTestGlobalNamespace.Destroy;
+begin
+  FreeAndNil(FHelper);
+  FreeAndNil(FChildHelper);
 end;
 
 function TTestGlobalNamespace.GetSystem: TJSSystemNamespace;

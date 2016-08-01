@@ -674,8 +674,9 @@ begin
   FLog := TStringList.Create;
   FClasses := TClassMap.Create;
   FEngine := InitEngine(Self);
+  FDebug := False;
   if not Assigned(FEngine) then
-    raise Exception.Create('Engine is not initialized, I don''t know why exception didn''t created before');
+    raise EScriptEngineException.Create('Engine is not initialized, I don''t know why exception didn''t created before');
   FGarbageCollector := TObjects.Create;
   FSystem := TJSSystemNamespace.Create(Self, '');
   FJSExtenders := TJSExtenderMap.Create;
@@ -768,7 +769,6 @@ begin
   Self.Code := code;
   Result := '';
   AnsiStr := AnsiString(code);
-  FEngine.InitializeContext;
   FEngine.SetDebug(Debug);
   CharPtr := FEngine.RunFile(PansiChar(AnsiStr), PansiChar(AnsiString(appPath)));
   if Assigned(CharPtr) then  
@@ -782,7 +782,6 @@ begin
   Self.Code := code;
   Result := '';
   AnsiStr := AnsiString(code);
-  FEngine.InitializeContext;
   FEngine.SetDebug(Debug);
   Result := string(FEngine.RunString(PansiChar(AnsiStr), PansiChar(AnsiString(appPath))));;
 end;
@@ -886,6 +885,8 @@ end;
 procedure TJSEngine.SetDebug(const Value: boolean);
 begin
   FDebug := Value;
+  if Assigned(FEngine) then  
+    FEngine.SetDebug(Value);
 end;
 
 procedure TJSEngine.SetFilename(const Value: string);

@@ -4444,6 +4444,8 @@ static void StartNodeInstance(void* arg, void* eng) {
     __lsan_do_leak_check();
 #endif
   }
+  ///it is here for allowing to run more scripts at one process - Letos;
+  debugger_running = false;
 
   {
     Mutex::ScopedLock scoped_lock(node_isolate_mutex);
@@ -4505,6 +4507,69 @@ int Start(int argc, char** argv, std::function<void(int)> func, void* eng) {
   exec_argv = nullptr;
 
   return exit_code;
+}
+
+/// node rerun methods
+int exec_argc_ = 0;
+const char** exec_argv_ = nullptr;
+
+void InitIalize(int argc, char *argv[]) {
+	PlatformInit();
+
+	CHECK_GT(argc, 0);
+
+	// Hack around with the argv pointer. Used for process.title = "blah".
+	argv = uv_setup_args(argc, argv);
+
+	// This needs to run *before* V8::Initialize().  The const_cast is not
+	// optional, in case you're wondering.
+	Init(&argc, const_cast<const char**>(argv), &exec_argc_, &exec_argv_);
+
+#if HAVE_OPENSSL
+#ifdef NODE_FIPS_MODE
+	// In the case of FIPS builds we should make sure
+	// the random source is properly initialized first.
+	OPENSSL_init();
+#endif  // NODE_FIPS_MODE
+	// V8 on Windows doesn't have a good source of entropy. Seed it from
+	// OpenSSL's pool.
+	V8::SetEntropySource(crypto::EntropySource);
+#endif
+
+	v8_platform.Initialize(v8_thread_pool_size);
+	V8::Initialize();
+}
+
+NODE_EXTERN int RunScript(int argc, char * argv[], std::function<void(int)> func, void * eng)
+{
+	exit = func;
+	int exit_code = 1;
+
+	int v8_argc;
+	const char** v8_argv;
+	ParseArgs(&argc, const_cast<const char**>(argv), &exec_argc_, &exec_argv_, &v8_argc, &v8_argv);
+	{
+		NodeInstanceData instance_data(NodeInstanceType::MAIN,
+			uv_default_loop(),
+			argc,
+			const_cast<const char**>(argv),
+			exec_argc_,
+			exec_argv_,
+			use_debug_agent);
+		StartNodeInstance(&instance_data, eng);
+		exit_code = instance_data.exit_code();
+	}
+	return exit_code;
+}
+
+void Dispose()
+{
+	V8::Dispose();
+
+	v8_platform.Dispose();
+
+	delete[] exec_argv_;
+	exec_argv_ = nullptr;
 }
 
 }  // namespace node

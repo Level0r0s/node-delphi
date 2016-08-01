@@ -147,7 +147,6 @@ type
     function RunFile(fileName, ExeName: PAnsiChar): PAnsiChar; virtual; stdcall; abstract;
     procedure SetDebug(debug: boolean); virtual; stdcall; abstract;
     function ErrorCode: integer; virtual; stdcall; abstract;
-    procedure InitializeContext; virtual; stdcall; abstract;
     procedure SetMethodCallBack(callBack: TMethodCallBack); virtual; stdcall; abstract;
     procedure SetPropGetterCallBack(callBack: TGetterCallBack); virtual; stdcall; abstract;
     procedure SetPropSetterCallBack(callBack: TSetterCallBack); virtual; stdcall; abstract;
@@ -159,5 +158,12 @@ type
 
   function InitEngine(DEngine: TObject): IEngine cdecl; external 'node.dll';
 
+  procedure FinalizeNode(); cdecl; external 'node.dll';
+
 implementation
+
+initialization
+
+finalization
+    FinalizeNode;
 end.

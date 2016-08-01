@@ -13,6 +13,7 @@
 #define APIENTRY __stdcall
 #define BZINTF _declspec(dllexport)
 #define BZDECL __cdecl
+#define BZDEPRECATED _declspec(deprecated)
 
 
 namespace Bv8 {
@@ -211,21 +212,6 @@ typedef void(APIENTRY *TMethodCallBack) (IMethodArgs * args);
 typedef void(APIENTRY *TGetterCallBack) (IGetterArgs * args);
 typedef void(APIENTRY *TSetterCallBack) (ISetterArgs * args);
 
-
-class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
-public:
-	virtual void* Allocate(size_t length);
-	virtual void* AllocateUninitialized(size_t length);
-	virtual void Free(void* data, size_t);
-};
-
-class ShellArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
-public:
-	virtual void* Allocate(size_t length);
-	virtual void* AllocateUninitialized(size_t length);
-	virtual void Free(void* data, size_t);
-};
-
 class IObjectProp : public IBazisIntf {
 public:
 	virtual void APIENTRY SetRead(bool Aread);;
@@ -272,18 +258,14 @@ private:
 
 class IEngine : public IBazisIntf {
 public:
-	IEngine(int argc, char* argv[]);
 	~IEngine();
 	IEngine(void * DEngine);
 
 	v8::Isolate * isolate = nullptr;
-	bool ReadScriptConsole();
-	std::vector<char> ReadCode(char * code);
 	bool report_exceptions = true;
 	bool print_result = true;
+	bool node_initialized;
 
-	void AddMethod(std::string methodName);;
-	v8::Isolate * GetIsolate();
 	std::vector<char *> MakeArgs(char * codeParam, bool isFileName, int& argc);
 
 	v8::Local<v8::FunctionTemplate> AddV8ObjectTemplate(IObjectTemplate * obj);
@@ -297,7 +279,6 @@ public:
 	bool DebugMode();
 	virtual int APIENTRY ErrorCode();
 	void SetErrorCode(int code);
-	virtual void APIENTRY InitializeGlobal();
 	virtual void APIENTRY SetMethodCallBack(TMethodCallBack callBack);
 	virtual void APIENTRY SetPropGetterCallBack(TGetterCallBack callBack);
 	virtual void APIENTRY SetPropSetterCallBack(TSetterCallBack callBack);
@@ -306,7 +287,6 @@ public:
 	virtual void APIENTRY SetIndexedPropGetterCallBack(TGetterCallBack callBack);
 	virtual void APIENTRY SetIndexedPropSetterCallBack(TSetterCallBack callBack);
 
-	v8::Persistent<v8::FunctionTemplate> glob;
 	void * globObject = nullptr;
 	IObjectTemplate * globalTemplate = nullptr;
 	void * DEngine = nullptr;
@@ -315,6 +295,7 @@ public:
 	virtual void* GetDelphiClasstype(v8::Local<v8::Object> obj);
 
 	v8::Local<v8::ObjectTemplate> MakeGlobalTemplate(v8::Isolate * iso);
+	v8::Persistent<v8::FunctionTemplate> glob;
 
 private:
 	std::vector<char> run_string_result;
@@ -340,10 +321,6 @@ private:
 	std::vector<std::unique_ptr<IObjectTemplate>> objects;
 	std::vector<std::string> methods;
 	std::vector<std::string> fields;
-	bool ExecuteString(v8::Local<v8::String> source, bool print_result, v8::Local<v8::Value> name, bool report_exceptions);
-	std::vector<char> RunString(v8::Local<v8::String> source, bool print_result, v8::Local<v8::Value> name, bool report_exceptions);
-	void ReportException(v8::Isolate* isolate, v8::TryCatch* try_catch);
-	v8::Local<v8::Context> CreateShellContext();
 	std::vector<v8::Local<v8::ObjectTemplate>> v8Templates;
 
 	static void IndexedPropGetter(unsigned int index, const v8::PropertyCallbackInfo<v8::Value>& info);
@@ -363,8 +340,9 @@ private:
 
 namespace Bazis {
 extern "C" {
-
 	BZINTF IEngine* BZDECL InitEngine(void * DEngine);
+
+	BZINTF void BZDECL FinalizeNode();
 
 	BZINTF int BZDECL GetEngineVersion();
 
