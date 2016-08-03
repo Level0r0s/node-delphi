@@ -39,7 +39,10 @@ type
     function NewCallBackClass: TCallBackClass;
     [TGCAttr]
     function NewSomeObject: TSomeObject;
+    [TGCAttr]
+    function NewSomeChild: TSomeChild;
     function Multiplicate(arg1, arg2: double; arg3: double = 1.0): double;
+    function VLength(vec: TVector3): double;
   end;
 
   // Test methods for class TJSEngine
@@ -53,7 +56,7 @@ type
     procedure TearDown; override;
   published
     procedure TestHelper;
-    procedure TestObjects;
+    procedure TestRecords;
     procedure TestCallBack;
   end;
 
@@ -94,13 +97,13 @@ begin
   Assert(ReturnValue = '0', FJSEngine.Log.Text);
 end;
 
-procedure TestTJSEngine.TestObjects;
+procedure TestTJSEngine.TestRecords;
 var
   ReturnValue: string;
 begin
-  ReturnValue := FJSEngine.RunFile('..\scripts\TestObjects.js', ParamStr(0));
+  ReturnValue := FJSEngine.RunFile('..\scripts\TestRecords.js', ParamStr(0));
   FJSEngine.Log.Add('<<ReturnCode>> ' + ReturnValue);
-  FJSEngine.Log.SaveToFile('TestObjects.log');
+  FJSEngine.Log.SaveToFile('TestRecords.log');
   Assert(ReturnValue = '0', FJSEngine.Log.Text);
 end;
 
@@ -137,6 +140,11 @@ begin
   Result := TCallBackClass.Create;
 end;
 
+function TTestGlobalNamespace.NewSomeChild: TSomeChild;
+begin
+  Result := TSomeChild.Create;
+end;
+
 function TTestGlobalNamespace.NewSomeObject: TSomeObject;
 begin
   Result := TSomeObject.Create;
@@ -155,6 +163,11 @@ end;
 function TTestGlobalNamespace.NewVectorList: TVectorList;
 begin
   Result := TVectorList.Create;
+end;
+
+function TTestGlobalNamespace.VLength(vec: TVector3): double;
+begin
+  Result := vec.Length;
 end;
 
 initialization

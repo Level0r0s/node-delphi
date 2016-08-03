@@ -11,28 +11,19 @@ type
     x, y: double;
   end;
 
-  TVector3 = class
-  private
-    Fx: double;
-    Fy: double;
-    Fz: double;
-    procedure Setx(const Value: double);
-    procedure Sety(const Value: double);
-    procedure Setz(const Value: double);
-    function GetGetself: TVector3;
+  TVector3 = record
   public
-    constructor Create(x, y, z: double);
-    property x: double read Fx write Setx;
-    property y: double read Fy write Sety;
-    property z: double read Fz write Setz;
-    property getSelf: TVector3 read GetGetself;
+    x: double;
+    y: double;
+    z: double;
+    constructor Create(ax, ay, az: double);
     function Length: double;
     [TGCAttr]
     function Copy: TVector3;
     function ToV2: TVector2;
   end;
 
-  TVectorList = class(TObjectList<TVector3>)
+  TVectorList = class(TList<TVector3>)
   end;
 
   //class with callback
@@ -82,19 +73,14 @@ implementation
 
 function TVector3.Copy: TVector3;
 begin
-  Result := TVector3.Create(Fx, Fy, Fz);
+  Result := TVector3.Create(x, y, z);
 end;
 
-constructor TVector3.Create(x, y, z: double);
+constructor TVector3.Create(ax, ay, az: double);
 begin
-  Fx := x;
-  Fy := y;
-  Fz := z;
-end;
-
-function TVector3.GetGetself: TVector3;
-begin
-  Result := Self;
+  x := ax;
+  y := ay;
+  z := az;
 end;
 
 function TVector3.Length: double;
@@ -102,25 +88,10 @@ begin
   Result := Sqrt(x*x + y*y + z*z);
 end;
 
-procedure TVector3.Setx(const Value: double);
-begin
-  Fx := Value;
-end;
-
-procedure TVector3.Sety(const Value: double);
-begin
-  Fy := Value;
-end;
-
-procedure TVector3.Setz(const Value: double);
-begin
-  Fz := Value;
-end;
-
 function TVector3.ToV2: TVector2;
 begin
-  Result.x := Fx;
-  Result.y := Fy;
+  Result.x := x;
+  Result.y := y;
 end;
 
 { TCallBackClass }
