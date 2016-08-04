@@ -85,7 +85,7 @@ type
     FSystem: TJSSystemNamespace;
     FEngine: IEngine;
     FGarbageCollector: TObjects;
-    FJSExtenders: TJSExtenderMap;
+    FJSHelpers: TJSExtenderMap;
     FScriptName: string;
     FDebug: boolean;
 
@@ -184,7 +184,7 @@ begin
   if not FClasses.TryGetValue(cType, JsClass) then
   begin
     JsClass := TJSClass.Create(cType);
-    if FJSExtenders.TryGetValue(cType, helper) then
+    if FJSHelpers.TryGetValue(cType, helper) then
       JsClass.AddHelper(helper);
     FClasses.Add(cType, JsClass);
     SetClassIntoContext(JsClass);
@@ -260,8 +260,8 @@ end;
 
 procedure TJSEngine.RegisterHelper(CType: TClass; HelperObject: TJSClassExtender);
 begin
-  if not FJSExtenders.ContainsKey(CType) then
-    FJSExtenders.Add(CType, HelperObject);
+  if not FJSHelpers.ContainsKey(CType) then
+    FJSHelpers.Add(CType, HelperObject);
 end;
 
 class procedure TJSEngine.callFieldGetter(args: IGetterArgs);
@@ -661,7 +661,7 @@ begin
     raise EScriptEngineException.Create('Engine is not initialized: internal dll error');
   FGarbageCollector := TObjects.Create;
   FSystem := TJSSystemNamespace.Create(Self, '');
-  FJSExtenders := TJSExtenderMap.Create;
+  FJSHelpers := TJSExtenderMap.Create;
   //set callbacks for methods, props, fields;
   FEngine.SetMethodCallBack(callMethod);
   FEngine.SetPropGetterCallBack(callPropGetter);
@@ -678,7 +678,7 @@ begin
   FClasses.Clear;
   FClasses.Free;
   FEngine.Delete;
-  FJSExtenders.Free;
+  FJSHelpers.Free;
   FGarbageCollector.Clear;
   FGarbageCollector.Free;
 end;
@@ -844,7 +844,7 @@ begin
     clParent := cl.cType.ClassParent;
     while clParent <> TObject do
     begin
-      if FJSExtenders.TryGetValue(clParent, helper) then
+      if FJSHelpers.TryGetValue(clParent, helper) then
         cl.AddHelper(helper);
       clParent := clParent.ClassParent;
     end;
@@ -1024,14 +1024,12 @@ end;
 
 constructor TJSClass.Create(classType: TClass);
 
-  function ReturnsForbiddenClass(method : TRttiMethod): boolean;
+  function ClassIsForbidden(clDescr: TRttiType): boolean;
   var
     Attrs: TArray<TCustomAttribute>;
     attr: TCustomAttribute;
-    clDescr: TRttiType;
   begin
     Result := False;
-    clDescr := method.ReturnType;
     if not Assigned(clDescr) then
       Exit;
     if clDescr.TypeKind = tkClass then
@@ -1043,6 +1041,11 @@ constructor TJSClass.Create(classType: TClass);
           Exit(True);
       end;
     end;
+  end;
+
+  function ReturnsForbiddenClass(method : TRttiMethod): boolean;
+  begin
+    Result := ClassIsForbidden(method.ReturnType);
   end;
 
   function HasForbiddenAttribute(Attrs: TArray<TCustomAttribute>): boolean;
@@ -1080,6 +1083,8 @@ begin
   FIndexedProps := TIndexedPropMap.Create;
   FClasstype := classType;
   Ftype := RttiContext.GetType(FClasstype);
+  if ClassIsForbidden(Ftype) then
+    raise EScriptEngineException.Create('Trying to create forbidden class');
   MethodArr := Ftype.GetMethods;
   for method in MethodArr do
   begin

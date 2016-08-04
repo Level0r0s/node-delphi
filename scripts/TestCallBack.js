@@ -1,5 +1,5 @@
 cb = NewCallBackClass();
-cb.OnClick = function (){
+cb.OnValueChange = function (){
 	system.log('Value changing');
 };
 system.log(cb.Value);
