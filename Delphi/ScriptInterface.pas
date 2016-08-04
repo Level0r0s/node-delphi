@@ -14,6 +14,8 @@ type
   TAllowedAttr = class(TCustomAttribute);
   //attribute for forbidden methods and fields of object
   TMethodForbiddenAttr = class(TCustomAttribute);
+  //attribute for forbidden objects
+  TObjectForbiddenAttr = class(TCustomAttribute);
 
   ICallableMethod = interface
     procedure Call(Sender: TObject);

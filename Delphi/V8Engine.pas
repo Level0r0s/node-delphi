@@ -177,7 +177,6 @@ function TJSEngine.AddClass(cType: TClass): TJSClass;
 var
   JsClass: TJSClass;
   helper: TJSClassExtender;
-//  ParentClass: TJSClass;
 begin
   Result := nil;
   if (cType = FGlobal.ClassType) or (cType = TObject) then
@@ -188,10 +187,6 @@ begin
     if FJSExtenders.TryGetValue(cType, helper) then
       JsClass.AddHelper(helper);
     FClasses.Add(cType, JsClass);
-//    if not FClasses.TryGetValue(cType.ClassParent, ParentClass) then
-//    begin
-//      ParentClass := AddClass(cType.ClassParent);
-//    end;
     SetClassIntoContext(JsClass);
   end;
   Result := JsClass;
@@ -861,8 +856,6 @@ begin
       if Assigned(Methods.MethodInfo.Method) then
       begin
         method := Methods.MethodInfo.Method;
-//        if (method.Parent.Handle.TypeData.ClassType = TObject) then
-//          continue;
         if Assigned(method.ReturnType) and (method.ReturnType.TypeKind = tkClass) then
         begin
           ReturnClass := method.ReturnType.Handle.TypeData.ClassType;
@@ -873,8 +866,6 @@ begin
         for i := 0 to Methods.OverloadsInfo.Count - 1 do
         begin
           method := Methods.OverloadsInfo[i].Method;
-//          if (method.Parent.Handle.TypeData.ClassType = TObject) then
-//            continue;
           if Assigned(method.ReturnType) and (method.ReturnType.TypeKind = tkClass) then
           begin
             ReturnClass := method.ReturnType.Handle.TypeData.ClassType;
@@ -1033,6 +1024,27 @@ end;
 
 constructor TJSClass.Create(classType: TClass);
 
+  function ReturnsForbiddenClass(method : TRttiMethod): boolean;
+  var
+    Attrs: TArray<TCustomAttribute>;
+    attr: TCustomAttribute;
+    clDescr: TRttiType;
+  begin
+    Result := False;
+    clDescr := method.ReturnType;
+    if not Assigned(clDescr) then
+      Exit;
+    if clDescr.TypeKind = tkClass then
+    begin
+      Attrs := clDescr.GetAttributes;
+      for attr in Attrs do
+      begin
+        if attr is TObjectForbiddenAttr then
+          Exit(True);
+      end;
+    end;
+  end;
+
   function HasForbiddenAttribute(Attrs: TArray<TCustomAttribute>): boolean;
   var
     attr: TCustomAttribute;
@@ -1071,6 +1083,8 @@ begin
   MethodArr := Ftype.GetMethods;
   for method in MethodArr do
   begin
+    if ReturnsForbiddenClass(method) then
+      continue;
     if HasForbiddenAttribute(method.GetAttributes) then
       continue;
     if (method.MethodKind in [mkProcedure, mkFunction]) and

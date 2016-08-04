@@ -43,6 +43,8 @@ type
     function NewSomeChild: TSomeChild;
     [TGCAttr]
     function NewAttrObject: TSomeAttrObject;
+    [TGCAttr]
+    function NewForbiddenObject: TSomeForbiddenObject;
     function Multiplicate(arg1, arg2: double; arg3: double = 1.0): double;
     function VLength(vec: TVector3): double;
   end;
@@ -60,7 +62,8 @@ type
     procedure TestHelper;
     procedure TestRecords;
     procedure TestCallBack;
-    procedure TestAttributes;
+    procedure TestMethodAttributes;
+    procedure TestObjectAttributes;
   end;
 
 implementation
@@ -80,13 +83,23 @@ begin
   FJSEngine := nil;
 end;
 
-procedure TestTJSEngine.TestAttributes;
+procedure TestTJSEngine.TestMethodAttributes;
 var
   ReturnValue: string;
 begin
-  ReturnValue := FJSEngine.RunFile('..\scripts\TestAttributes.js', ParamStr(0));
+  ReturnValue := FJSEngine.RunFile('..\scripts\TestMethodAttributes.js', ParamStr(0));
   FJSEngine.Log.Add('<<ReturnCode>> ' + ReturnValue);
-  FJSEngine.Log.SaveToFile('TestAttributes.log');
+  FJSEngine.Log.SaveToFile('TestMethodAttributes.log');
+  Assert(ReturnValue <> '0', FJSEngine.Log.Text);
+end;
+
+procedure TestTJSEngine.TestObjectAttributes;
+var
+  ReturnValue: string;
+begin
+  ReturnValue := FJSEngine.RunFile('..\scripts\TestObjectAttributes.js', ParamStr(0));
+  FJSEngine.Log.Add('<<ReturnCode>> ' + ReturnValue);
+  FJSEngine.Log.SaveToFile('TestObjectAttributes.log');
   Assert(ReturnValue <> '0', FJSEngine.Log.Text);
 end;
 
@@ -156,6 +169,11 @@ end;
 function TTestGlobalNamespace.NewCallBackClass: TCallBackClass;
 begin
   Result := TCallBackClass.Create;
+end;
+
+function TTestGlobalNamespace.NewForbiddenObject: TSomeForbiddenObject;
+begin
+  Result := TSomeForbiddenObject.Create;
 end;
 
 function TTestGlobalNamespace.NewSomeChild: TSomeChild;

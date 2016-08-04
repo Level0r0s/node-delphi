@@ -69,6 +69,13 @@ type
     function GetNumber: integer;
   end;
 
+  //this class and all methods, create him, sholdn't exist in scripts
+  [TObjectForbiddenAttr]
+  TSomeForbiddenObject = class
+  public
+    function Get5: integer;
+  end;
+
 implementation
 
 { TVector3 }
@@ -138,6 +145,13 @@ end;
 function TSomeAttrObject.GetNumber: integer;
 begin
   Result := 1;
+end;
+
+{ TSomeForbiddenObject }
+
+function TSomeForbiddenObject.Get5: integer;
+begin
+  Result := 5;
 end;
 
 end.
