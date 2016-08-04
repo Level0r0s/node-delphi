@@ -1032,6 +1032,19 @@ begin
 end;
 
 constructor TJSClass.Create(classType: TClass);
+
+  function HasForbiddenAttribute(Attrs: TArray<TCustomAttribute>): boolean;
+  var
+    attr: TCustomAttribute;
+  begin
+    Result := False;
+    for attr in Attrs do
+    begin
+      if attr is TMethodForbiddenAttr then
+        Exit(True);
+    end;
+  end;
+
 var
   MethodArr: TArray<TRttiMethod>;
   overloads: TMethodOverloadMap;
@@ -1058,6 +1071,8 @@ begin
   MethodArr := Ftype.GetMethods;
   for method in MethodArr do
   begin
+    if HasForbiddenAttribute(method.GetAttributes) then
+      continue;
     if (method.MethodKind in [mkProcedure, mkFunction]) and
       (method.Visibility = mvPublic) and (method.Parent.Handle.TypeData.ClassType <> TObject) then
     begin

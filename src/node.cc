@@ -4354,8 +4354,6 @@ static void StartNodeInstance(void* arg, void* eng) {
 #endif
   ///
   Isolate* isolate = Isolate::New(params);
-
-  isolate->Enter();
   {
     Mutex::ScopedLock scoped_lock(node_isolate_mutex);
     if (instance_data->is_main()) {
@@ -4442,8 +4440,6 @@ static void StartNodeInstance(void* arg, void* eng) {
     RunAtExit(&env);
 
     WaitForInspectorDisconnect(&env);
-	///
-	isolate->Exit();
 #if defined(LEAK_SANITIZER)
     __lsan_do_leak_check();
 #endif

@@ -61,15 +61,17 @@ type
     function ValueX2:Double;
   end;
 
+  //class with custom attributes
+  TSomeAttrObject = class
+  public
+    [TMethodForbiddenAttr]
+    function GetForbiddenNumber: integer;
+    function GetNumber: integer;
+  end;
 
 implementation
 
 { TVector3 }
-
-//class operator TVector3.Add(v1, v2: TVector3): TVector3;
-//begin
-//  Result := TVector3.Create(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
-//end;
 
 function TVector3.Copy: TVector3;
 begin
@@ -124,6 +126,18 @@ begin
   Result := -1;
   if Source is TSomeObject then
     Result := (Source as TSomeObject).Value * 2;
+end;
+
+{ TSomeAttrObject }
+
+function TSomeAttrObject.GetForbiddenNumber: integer;
+begin
+  Result := -1;
+end;
+
+function TSomeAttrObject.GetNumber: integer;
+begin
+  Result := 1;
 end;
 
 end.

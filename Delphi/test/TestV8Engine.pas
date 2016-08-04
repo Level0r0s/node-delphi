@@ -41,6 +41,8 @@ type
     function NewSomeObject: TSomeObject;
     [TGCAttr]
     function NewSomeChild: TSomeChild;
+    [TGCAttr]
+    function NewAttrObject: TSomeAttrObject;
     function Multiplicate(arg1, arg2: double; arg3: double = 1.0): double;
     function VLength(vec: TVector3): double;
   end;
@@ -58,6 +60,7 @@ type
     procedure TestHelper;
     procedure TestRecords;
     procedure TestCallBack;
+    procedure TestAttributes;
   end;
 
 implementation
@@ -75,6 +78,16 @@ procedure TestTJSEngine.TearDown;
 begin
   FJSEngine.Free;
   FJSEngine := nil;
+end;
+
+procedure TestTJSEngine.TestAttributes;
+var
+  ReturnValue: string;
+begin
+  ReturnValue := FJSEngine.RunFile('..\scripts\TestAttributes.js', ParamStr(0));
+  FJSEngine.Log.Add('<<ReturnCode>> ' + ReturnValue);
+  FJSEngine.Log.SaveToFile('TestAttributes.log');
+  Assert(ReturnValue <> '0', FJSEngine.Log.Text);
 end;
 
 procedure TestTJSEngine.TestCallBack;
@@ -133,6 +146,11 @@ end;
 function TTestGlobalNamespace.Multiplicate(arg1, arg2, arg3: double): double;
 begin
   Result := arg1 * arg2 * arg3;
+end;
+
+function TTestGlobalNamespace.NewAttrObject: TSomeAttrObject;
+begin
+  Result := TSomeAttrObject.Create;
 end;
 
 function TTestGlobalNamespace.NewCallBackClass: TCallBackClass;

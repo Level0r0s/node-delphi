@@ -12,6 +12,8 @@ type
   TGCAttr = class(TCustomAttribute);
   //attribute for allowed object methods, props and fields
   TAllowedAttr = class(TCustomAttribute);
+  //attribute for forbidden methods and fields of object
+  TMethodForbiddenAttr = class(TCustomAttribute);
 
   ICallableMethod = interface
     procedure Call(Sender: TObject);
