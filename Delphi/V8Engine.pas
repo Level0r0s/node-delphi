@@ -88,14 +88,14 @@ type
     FJSHelpers: TJSExtenderMap;
     FScriptName: string;
     FDebug: boolean;
+    FIgnoredExceptions: TList<TClass>;
 
-    procedure SetGarbageCollector(const Value: TObjects);
-    procedure SetClasses(const Value: TClassMap);
     procedure SetDebug(const Value: boolean);
 
   public
     constructor Create;
     destructor Destroy; override;
+    procedure AddExceptionToIgnored(E: TClass);
     function AddClass(cType: TClass): TJSClass;
     function AddGlobal(global: TObject): TJSClass;
     procedure RegisterHelper(CType: TClass; HelperObject: TJSClassExtender);
@@ -108,9 +108,7 @@ type
     class procedure callIndexedPropSetter(args: ISetterArgs); static; stdcall;
     class function GetMethodInfo(List: TRttiMethodList; args: IMethodArgs): TRttiMethodInfo;
 
-    property GarbageCollector: TObjects read FGarbageCollector write SetGarbageCollector;
     property Log: TStrings read FLog;
-    property Classes: TClassMap read FClasses write SetClasses;
     property Debug: boolean read FDebug write SetDebug;
     function RunScript(code, appPath: string): string;
     function RunFile(fileName, appPath: string): string; overload;
@@ -190,6 +188,11 @@ begin
     SetClassIntoContext(JsClass);
   end;
   Result := JsClass;
+end;
+
+procedure TJSEngine.AddExceptionToIgnored(E: TClass);
+begin
+  FIgnoredExceptions.Add(E);
 end;
 
 function TJSEngine.AddGlobal(global: TObject): TJSClass;
@@ -588,7 +591,7 @@ begin
     if Result.IsObject then
       for Attr in Method.GetAttributes do
         if Attr is TGCAttr then
-          Eng.GarbageCollector.AddObject(Result.AsObject);
+          Eng.FGarbageCollector.AddObject(Result.AsObject);
     if Assigned(Method.ReturnType) then
     begin
       ReturnType :=  Method.ReturnType.TypeKind;
@@ -803,11 +806,6 @@ begin
     Result := string(CharPtr);
 end;
 
-procedure TJSEngine.SetClasses(const Value: TClassMap);
-begin
-  FClasses := Value;
-end;
-
 procedure TJSEngine.SetClassIntoContext(cl: TJSClass);
 
   function GetParent(ParentClass: TClass): IObjectTemplate;
@@ -894,11 +892,6 @@ begin
   FDebug := Value;
   if Assigned(FEngine) then  
     FEngine.SetDebug(Value);
-end;
-
-procedure TJSEngine.SetGarbageCollector(const Value: TObjects);
-begin
-  FGarbageCollector := Value;
 end;
 
 procedure TJSEngine.SetRecordIntoContext(ValRecord: TValue; RecDescr: TRttiType;
