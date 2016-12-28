@@ -4497,8 +4497,6 @@ void NodeEngine::StartNodeInstance(void* arg, void* eng) {
 		  instance_data->exec_argv(),
 		  v8_is_profiling);
 
-	  node_started = true;
-
 	  node_engine_isolate->SetAbortOnUncaughtExceptionCallback(
 		  ShouldAbortOnUncaughtException);
 
@@ -4521,6 +4519,8 @@ void NodeEngine::StartNodeInstance(void* arg, void* eng) {
 		  IEngine	* engine = static_cast<IEngine *>(eng);
 		  engine->ExecIncludeCode(context);
 	  }
+
+      node_started = true;
 
 	  {
 		  SealHandleScope seal(node_engine_isolate);
@@ -4549,10 +4549,13 @@ void NodeEngine::StopNodeInstance() {
 	if (!node_started)
 		return;
 	//auto isolate = isolate;
-	auto ctx = node_engine_isolate->GetCurrentContext();
-	if (*ctx)
-		ctx->Exit();
-	node_engine_isolate->TerminateExecution();
+    {
+        HandleScope scope(node_engine_isolate);
+        auto ctx = node_engine_isolate->GetCurrentContext();
+        if (*ctx)
+            ctx->Exit();
+        node_engine_isolate->TerminateExecution();
+    }
 	auto instance_data = static_cast<ScriptParams *>(script_params_ptr)->GetInstanceData();
 	Environment * env = static_cast<EnvWrapeer *>(env_wrapper_ptr)->GetEnvironment();
 
