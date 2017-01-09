@@ -1367,6 +1367,7 @@ void IGetterArgs::SetGetterResultAsIndexObject(void * parentObj, void * rttiProp
 	if (!result.IsEmpty())
 	{
 		propinfo->GetReturnValue().Set(result);
+        return;
 	}
 	auto dTempl = eng->indexedObjTemplate;
 	if (!dTempl.IsEmpty()) {
@@ -1377,7 +1378,6 @@ void IGetterArgs::SetGetterResultAsIndexObject(void * parentObj, void * rttiProp
 		eng->AddObject(parentObj, rttiProp, obj, iso);
 		propinfo->GetReturnValue().Set(obj);
 	}
-
 }
 
 void IGetterArgs::SetGetterResultAsRecord()
