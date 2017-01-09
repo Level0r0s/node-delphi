@@ -4555,22 +4555,21 @@ void NodeEngine::StopNodeInstance() {
 	node_engine_isolate->TerminateExecution();
 	auto instance_data = static_cast<ScriptParams *>(script_params_ptr)->GetInstanceData();
 	Environment * env = static_cast<EnvWrapeer *>(env_wrapper_ptr)->GetEnvironment();
+    {
+        Isolate::Scope scope(node_engine_isolate);
+        ////original code from node (was at StartNodeInstance)
+        env->set_trace_sync_io(false);
 
-	////original code from node (was at StartNodeInstance)
-	env->set_trace_sync_io(false);
+        int exit_code = EmitExit(env);
+        RunAtExit(env);
 
-	int exit_code = EmitExit(env);
-	//if (instance_data->is_main())
-	//	instance_data->set_exit_code(exit_code);
-	RunAtExit(env);
-
-	WaitForInspectorDisconnect(env);
+        WaitForInspectorDisconnect(env);
 #if defined(LEAK_SANITIZER)
-	__lsan_do_leak_check();
+        __lsan_do_leak_check();
 #endif
-	///it is here for allowing to run more scripts at one process - Letos;
-	debugger_running = false;
-
+        ///it is here for allowing to run more scripts at one process - Letos;
+        debugger_running = false;
+    }
 	{
 		Mutex::ScopedLock scoped_lock(node_isolate_mutex);
 		if (node_isolate == node_engine_isolate)
