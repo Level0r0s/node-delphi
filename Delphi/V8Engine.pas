@@ -105,6 +105,7 @@ type
     FGlobalTemplate: IObjectTemplate;
     FEnumList: TList<PTypeInfo>;
     FDebugPort: string;
+    FAdParams: string;
     procedure SetResultToArgs(args: IGetterArgs; ResultType: TRttiType; Result: TValue); overload;
     procedure SetResultToArgs(args: ISetterArgs; ResultType: TRttiType; Result: TValue); overload;
 
@@ -132,6 +133,7 @@ type
 
     procedure SetDebug(const Value: boolean);
     procedure SetDebugPort(const Value: string);
+    procedure SetAdParams(const Value: string);
   public
     constructor Create;
     destructor Destroy; override;
@@ -148,6 +150,7 @@ type
 
     property Debug: boolean read FDebug write SetDebug;
     property DebugPort: string read FDebugPort write SetDebugPort;
+    property AdParams: string read FAdParams write SetAdParams;
     function RunScript(code, scriptName: string): TValue;
     function RunIncludeCode(code: string): string;
     function RunFile(fileName, scriptPath: string): string;
@@ -1380,7 +1383,8 @@ begin
   RawByteStr := UTF8Encode(FScriptName);
   FEngine.SetDebug(Debug, PAnsiChar(UTF8String(FDebugPort)));
   FAppPath := scriptPath;
-  CharPtr := FEngine.RunFile(PansiChar(RawByteStr), PansiChar(UTF8String(scriptPath)));
+  CharPtr := FEngine.RunFile(PansiChar(RawByteStr),
+    PansiChar(UTF8String(scriptPath)), PAnsiChar(UTF8String(FAdParams)));
   if Assigned(CharPtr) then
     Result := PUtf8CharToString(CharPtr);
   Result := '';
@@ -1435,15 +1439,36 @@ begin
   FScriptName := scriptName;
   scriptPath := ExtractFilePath(scriptName);
   scriptName := ExtractFileName(scriptName);
+//  FEngine.SetDebug(Debug);
   resValue := FEngine.RunString(PansiChar(codeStr),
-    PansiChar(UTF8String(scriptName)), PAnsiChar(UTF8String(scriptPath)));
+    PansiChar(UTF8String(scriptName)), PAnsiChar(UTF8String(scriptPath)),
+    PAnsiChar(UTF8String(FAdParams)));
   if Assigned(resValue) then
     Result := JsValToTValue(resValue);
 end;
 
 class procedure TJSEngine.SendErrToLog(errMsg: PAnsiChar; eng: TObject);
-const
-  nodeErrorStack = 'at ContextifyScript.Script.runInThisContext';
+
+  function TrimErrorStack(msg: string): string;
+  const
+    nodeErrorStack1 = 'at ContextifyScript.Script.runInThisContext';
+    nodeErrorStack2 = 'at Object.exports.runInThisContext';
+    nodeErrorStack3 = 'at Module._compile';
+  var
+    StrPos: integer;
+  begin
+    Result := msg;
+    StrPos := Pos(nodeErrorStack1, Result);
+    if StrPos < 1 then
+    begin
+      StrPos := Pos(nodeErrorStack2, Result);
+      if StrPos < 1 then
+        StrPos := Pos(nodeErrorStack3, Result);
+    end;
+    if StrPos > 0 then
+      Result := Copy(Result, 1, StrPos - 1);
+  end;
+
 var
   engine: TJSEngine;
   msg, scriptName, lineNumString, tempString: string;
@@ -1457,9 +1482,7 @@ begin
     if Assigned(engine.FLog) then
     begin
       msg := PUtf8CharToString(errMsg);
-      StrPos := Pos(nodeErrorStack, msg);
-      if StrPos > 0 then
-        msg := Copy(msg, 1, StrPos - 1);
+      msg := TrimErrorStack(msg);
       scriptName := ExtractFileName(engine.FScriptName);
       StrPos := Pos(scriptName, msg);
       if StrPos > 0 then
@@ -1480,7 +1503,7 @@ begin
           StrPos := Pos('^', tempString);
           if StrPos > 0 then
             msg := Copy(tempString, StrPos + 1, Length(tempString) - StrPos - 1);
-          engine.FLog.AddObject(msg + engine.FLog.NameValueSeparator + scriptName, TObject(lineNum));
+          engine.FLog.AddObject(msg + engine.FLog.NameValueSeparator + engine.FScriptName, TObject(lineNum));
           Added := True
         end;
       end;
@@ -1488,6 +1511,11 @@ begin
         engine.FLog.Add(msg);
     end;
   end;
+end;
+
+procedure TJSEngine.SetAdParams(const Value: string);
+begin
+  FAdParams := Value;
 end;
 
 procedure TJSEngine.SetClassIntoContext(cl: TJSClass);

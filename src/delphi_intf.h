@@ -339,7 +339,7 @@ public:
 	//std::stack<std::unique_ptr<v8::Isolate>> isolates;
 	v8::Isolate * isolate = nullptr;
 
-	std::vector<char *> MakeArgs(char * codeParam, bool isFileName, int& argc, char * exePath);
+	std::vector<char *> MakeArgs(char * codeParam, bool isFileName, int& argc, char * exePath, char * additionalParams);
 
 	v8::Local<v8::FunctionTemplate> AddV8ObjectTemplate(IObjectTemplate * obj);
 
@@ -347,8 +347,8 @@ public:
 	virtual IObjectTemplate * APIENTRY AddObject(char * classtype, void * dClass);
 	virtual IObjectTemplate * APIENTRY GetObjectByClass(void * dClass);
 	virtual bool APIENTRY ClassIsRegistered(void * dClass);
-	virtual IValue * APIENTRY RunString(char * code, char * scriptName, char * scriptPath);
-	virtual char * APIENTRY RunFile(char * fName, char * exeName);
+	virtual IValue * APIENTRY RunString(char * code, char * scriptName, char * scriptPath, char * additionalParams);
+	virtual char * APIENTRY RunFile(char * fName, char * exeName, char * additionalParams);
 	virtual char * APIENTRY RunIncludeFile(char * fName);
 	virtual char * APIENTRY RunIncludeCode(char * code);
 	virtual void APIENTRY AddIncludeCode(char * code);

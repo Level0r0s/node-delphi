@@ -188,8 +188,8 @@ type
     function AddObject(classtype: PAnsiChar; dClass: Pointer): IObjectTemplate; virtual; stdcall; abstract;
     function GetObject(dClass: Pointer): IObjectTemplate; virtual; stdcall; abstract;
     function ClassIsRegistered(dClass: Pointer): boolean; virtual; stdcall; abstract;
-    function RunString(code, ScriptName, ScriptPath: PAnsiChar): IValue; virtual; stdcall; abstract;
-    function RunFile(fileName, ExeName: PAnsiChar): PAnsiChar; virtual; stdcall; abstract;
+    function RunString(code, ScriptName, ScriptPath, AdditionalParams: PAnsiChar): IValue; virtual; stdcall; abstract;
+    function RunFile(fileName, ExeName, AdditionalParams: PAnsiChar): PAnsiChar; virtual; stdcall; abstract;
     function RunIncludeFile(fileName: PAnsiChar): PAnsiChar; virtual; stdcall; abstract;
     function RunIncludeCode(code: PAnsiChar): PAnsiChar; virtual; stdcall; abstract;
     procedure AddIncludeCode(code: PAnsiChar); virtual; stdcall; abstract;

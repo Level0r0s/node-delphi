@@ -74,7 +74,7 @@ bool IEngine::ClassIsRegistered(void * dClass)
 	return (GetObjectByClass(dClass) != nullptr);
 }
 
-std::vector<char *> IEngine::MakeArgs(char * codeParam, bool isFileName, int& argc, char * scriptName)
+std::vector<char *> IEngine::MakeArgs(char * codeParam, bool isFileName, int& argc, char * scriptName, char * additionalParams)
 {
 	std::vector<char *> args;
 	args.push_back(scriptName);
@@ -102,8 +102,36 @@ std::vector<char *> IEngine::MakeArgs(char * codeParam, bool isFileName, int& ar
             arg1 = scriptName;
             args.push_back(arg1);
             argc += 4;
+            //if it possible, find better way to synchronize default arguments & their count for 'eval' and 'debug' modes
+            args.push_back(scriptName);
+            argc++;
 		}
 	}
+    if (additionalParams) {
+        std::string params = additionalParams;        
+        while (!params.empty()) {
+            int strpos = params.find('\n\r');
+            std::string subStr;
+            if (strpos >= 0) {
+                subStr = params.substr(0, strpos);
+            }
+            else {
+                subStr = params;
+            }                
+            char * arg = new char[subStr.size() + 1];
+            std::copy(subStr.begin(), subStr.end(), arg);
+            arg[subStr.size()] = '\0';
+            if (arg != "" && arg != "\r") {
+                args.push_back(arg);
+                argc++;
+            }
+            if (strpos < 0) {
+                break;
+            }
+
+            params = params.substr(strpos + 2, params.length() - strpos - 2);
+        }
+    }
 	return args;
 }
 
@@ -168,11 +196,11 @@ static void log(const v8::FunctionCallbackInfo<v8::Value>& args) {
 	printf(strval.c_str());
 }
 
-inline IValue * IEngine::RunString(char * code, char * scriptName, char * scriptPath) {
+inline IValue * IEngine::RunString(char * code, char * scriptName, char * scriptPath, char * additionalParams) {
 	try {
 		errCode = -1;
 		int argc = 0;
-		auto argv = MakeArgs(code, false, argc, scriptName);
+		auto argv = MakeArgs(code, false, argc, scriptName, additionalParams);
 		uv_chdir(scriptPath);
 		node_engine->RunScript(argc, argv.data(), [this](int code) {this->SetErrorCode(code); }, this);
 	}
@@ -187,11 +215,11 @@ inline IValue * IEngine::RunString(char * code, char * scriptName, char * script
 	return new IValue(isolate, v8::Integer::New(isolate, errCode), -1);
 }
 
-char * IEngine::RunFile(char * fName, char * exeName)
+char * IEngine::RunFile(char * fName, char * exeName, char * additionalParams)
 {
 	try {
 		int argc = 0;
-		auto argv = MakeArgs(fName, true, argc, exeName);
+		auto argv = MakeArgs(fName, true, argc, exeName, additionalParams);
 		node_engine->RunScript(argc, argv.data(), [this](int code) {this->SetErrorCode(code); }, this);
 	}
 	catch (node::V8Exception &e) {
