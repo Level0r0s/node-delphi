@@ -474,6 +474,8 @@ extern "C" {
 
 	BZINTF IEngine* BZDECL InitGlobalEngine(void * DEngine);
 
+    BZINTF void BZDECL InitializeNode();
+
 	BZINTF void BZDECL FinalizeNode();
 
 	BZINTF int BZDECL GetEngineVersion();

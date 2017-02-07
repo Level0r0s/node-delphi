@@ -220,9 +220,10 @@ type
 
   function InitEngine(DEngine: TObject): IEngine cdecl; external 'node.dll' delayed;
 
-  procedure FinalizeNode(); cdecl; external 'node.dll' delayed;
+  function InitGlobalEngine(DEngine: TObject): IEngine cdecl; external 'node.dll' delayed;
 
-  procedure SetExeName(name: PAnsiChar); cdecl; external 'node.dll' delayed;
+  procedure InitializeNode(); cdecl; external 'node.dll' delayed;
+  procedure FinalizeNode(); cdecl; external 'node.dll' delayed;
 
 implementation
 

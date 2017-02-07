@@ -31,12 +31,7 @@ namespace Bazis {
 	BZINTF IEngine *BZDECL InitGlobalEngine(void * DEngine)
 	{
 		try {
-			if (!nodeInitialized) {
-				std::vector<char *> args;
-				args.push_back("");
-				node::InitIalize(1, args.data());
-				nodeInitialized = true;
-			}
+            InitializeNode();
 			global_engine = new IEngine(DEngine);
 			return global_engine;
 		}
@@ -44,6 +39,17 @@ namespace Bazis {
 			return nullptr;
 		}
 	}
+
+    BZINTF void BZDECL InitializeNode()
+    {
+        if (!nodeInitialized) {
+            std::vector<char *> args;
+            args.push_back("");
+            node::InitIalize(1, args.data());
+            nodeInitialized = true;
+        }
+        return;
+    }
 
 	BZINTF void BZDECL FinalizeNode()
 	{
