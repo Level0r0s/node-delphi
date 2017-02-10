@@ -44,6 +44,7 @@ type
 //  function JSValToJSString(val: jsval): PJSString;
   function JSValToBoolean(val: jsval): Boolean;
   function JSValToString(val: jsval): UnicodeString;
+  function JsValToVariant(val: jsval): Variant;
   function JsValToTValue(val: jsval): TValue; overload;
   function JsValToTValue(val: jsval; typ: TRttiType): TValue; overload;
   function JSvalToRecordTValue(val: jsval; typ: TRttiType): TValue;
@@ -236,6 +237,21 @@ end;
     Result := TValue.FromArray(Result.TypeInfo, TValueArr);
   end;
 
+  function JsValToVariant(val: jsval): Variant;
+  begin
+    if not assigned(val) then
+      Exit('');
+    //checking for type
+    if val.IsBool then
+      Result := JSValToBoolean(val)
+    else if val.IsInt then
+      Result := JSValToInt(val)
+    else if Val.IsNumber then
+      Result := JSValToDouble(val)
+    else if val.IsString then
+      Result := JSValToString(val);
+  end;
+
   function JsValToTValue(val: jsval): TValue;
   begin
     if not assigned(val) then
@@ -354,7 +370,7 @@ end;
       tkWChar: Result := UTF8ToUnicodeString(RawByteString(val.AsString));
       tkLString: Result := (UTF8ToUnicodeString(RawByteString(val.AsString)));
       tkWString: Result := UTF8ToUnicodeString(RawByteString(val.AsString));
-      tkVariant: Result := JsValToTValue(val);
+      tkVariant: Result := TValue.From<Variant>(JsValToVariant(val));
       tkArray: ;
       tkRecord:
       begin
@@ -468,6 +484,23 @@ end;
       end;
     end;
 
+    function MakeVariant: IBaseValue;
+    var
+      variantVal: Variant;
+    begin
+      Result := nil;
+      variantVal := val.AsVariant;
+      if VarType(variantVal) = varBoolean then
+        Result := Eng.NewValue(Boolean(variantVal))
+      else
+      begin
+        if VarIsNumeric(variantVal) then
+          Result := Eng.NewValue(Double(variantVal))
+        else if VarIsStr(variantVal) then
+          Result := Eng.NewValue(PAnsiChar(UTF8String(string(variantVal))));
+      end;
+    end;
+
   var
     valType: Typinfo.TTypeKind;
   begin
@@ -486,7 +519,7 @@ end;
       tkWChar: Result := Eng.NewValue(PAnsiChar(UTF8String(val.AsString)));
       tkLString: Result := Eng.NewValue(PAnsiChar(UTF8String(val.AsString)));
       tkWString: Result := Eng.NewValue(PAnsiChar(UTF8String(val.AsString)));
-      tkVariant: ;
+      tkVariant: Result := MakeVariant;
       tkArray: Result := TValueToArray(val, Eng, IntfList);
       tkRecord: Result := TValueToJSRecord(val, Eng, IntfList);
       tkInterface: Result := MakeInterface;

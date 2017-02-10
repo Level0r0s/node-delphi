@@ -219,6 +219,8 @@ type
     procedure SetIndexedPropGetterObjCallBack(callBack: TGetterCallBack); virtual; stdcall; abstract;
     procedure SetIndexedPropGetterCallBack(callBack: TGetterCallBack); virtual; stdcall; abstract;
     procedure SetIndexedPropSetterCallBack(callBack: TSetterCallBack); virtual; stdcall; abstract;
+    procedure SetNamedPropGetterCallBack(callBack: TGetterCallBack); virtual; stdcall; abstract;
+    procedure SetNamedPropSetterCallBack(callBack: TSetterCallBack); virtual; stdcall; abstract;
     procedure SetInterfaceGetterCallBack(callBack: TGetterCallBack); virtual; stdcall; abstract;
     procedure SetInterfaceSetterCallBack(callBack: TIntfSetterCallBack); virtual; stdcall; abstract;
     procedure SetInterfaceMethodCallBack(callBack: TMethodCallBack); virtual; stdcall; abstract;

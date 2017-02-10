@@ -218,6 +218,7 @@ private:
 class ISetterArgs : public IBazisIntf {
 public:
 	ISetterArgs(const v8::PropertyCallbackInfo<void>& info, char * prop, v8::Local<v8::Value> newValue);
+    ISetterArgs(const v8::PropertyCallbackInfo<v8::Value>& info, v8::Local<v8::Value> value, v8::Local<v8::Value> newValue);
 	ISetterArgs(const v8::PropertyCallbackInfo<v8::Value>& info, int index, v8::Local<v8::Value> newValue);
 	virtual void * APIENTRY GetEngine();
 	virtual void * APIENTRY GetDelphiObject();
@@ -381,6 +382,8 @@ public:
 	virtual void APIENTRY SetIndexedPropGetterObjCallBack(TGetterCallBack callBack);
 	virtual void APIENTRY SetIndexedPropGetterNumberCallBack(TGetterCallBack callBack);
 	virtual void APIENTRY SetIndexedPropSetterNumberCallBack(TSetterCallBack callBack);
+    virtual void APIENTRY SetNamedPropGetterNumberCallBack(TGetterCallBack callBack);
+    virtual void APIENTRY SetNamedPropSetterNumberCallBack(TSetterCallBack callBack);
 	virtual void APIENTRY SetInterfaceGetterPropCallBack(TGetterCallBack callBack);
 	virtual void APIENTRY SetInterfaceSetterPropCallBack(TIntfSetterCallBack callBack);
 	virtual void APIENTRY SetInterfaceMethodCallBack(TMethodCallBack callBack);
@@ -436,6 +439,8 @@ private:
 	TGetterCallBack IndPropGetterObjCall;
 	TGetterCallBack IndPropGetterCall;
 	TSetterCallBack IndPropSetterCall;
+    TGetterCallBack NamedPropGetterCall;
+    TSetterCallBack NamedPropSetterCall;
 	TGetterCallBack IFaceGetterPropCall;
 	TIntfSetterCallBack IFaceSetterPropCall;
 	TMethodCallBack IFaceMethodCall;
@@ -453,7 +458,9 @@ private:
 	static void IndexedPropObjGetter(v8::Local<v8::String> property,
 		const v8::PropertyCallbackInfo<v8::Value>& info);
 	static void IndexedPropGetter(unsigned int index, const v8::PropertyCallbackInfo<v8::Value>& info);
+    static void NamedPropGetter(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Value>& info);
 	static void IndexedPropSetter(unsigned int index, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<v8::Value>& info);
+    static void NamedPropSetter(v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<v8::Value>& info);
 
 	static void FieldGetter(v8::Local<v8::String> property,
 		const v8::PropertyCallbackInfo<v8::Value>& info);

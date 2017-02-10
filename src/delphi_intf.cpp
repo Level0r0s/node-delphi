@@ -396,6 +396,16 @@ void IEngine::SetIndexedPropSetterNumberCallBack(TSetterCallBack callBack)
 	IndPropSetterCall = callBack;
 }
 
+void IEngine::SetNamedPropGetterNumberCallBack(TGetterCallBack callBack)
+{
+    NamedPropGetterCall = callBack;
+}
+
+void IEngine::SetNamedPropSetterNumberCallBack(TSetterCallBack callBack)
+{
+    NamedPropSetterCall = callBack;
+}
+
 void IEngine::SetInterfaceGetterPropCallBack(TGetterCallBack callBack)
 {
 	IFaceGetterPropCall = callBack;
@@ -538,8 +548,6 @@ void * IEngine::GetDelphiObject(v8::Local<v8::Object> holder)
 void * IEngine::GetDelphiClasstype(v8::Local<v8::Object> obj)
 {
 	v8::Isolate::Scope scope(isolate);
-	v8::String::Utf8Value objstring(obj->ToString());
-	v8::String::Utf8Value objDetString(obj->ToDetailString());
 	int count = obj->InternalFieldCount();
 	// remove it if will be better way (needs only for "different global objects") ----
 	if (count < 1) {
@@ -602,6 +610,7 @@ v8::Local<v8::ObjectTemplate> IEngine::MakeGlobalTemplate(v8::Isolate * iso)
 	indexedObjTemplate = v8::ObjectTemplate::New(iso);
 	indexedObjTemplate->SetInternalFieldCount(ObjectInternalFieldCount);
 	indexedObjTemplate->SetIndexedPropertyHandler(IndexedPropGetter, IndexedPropSetter);
+    indexedObjTemplate->SetNamedPropertyHandler(NamedPropGetter, NamedPropSetter);
 
 	v8::Local<v8::FunctionTemplate> global = v8::FunctionTemplate::New(isolate);
 	if (globalTemplate) {
@@ -676,6 +685,21 @@ void IEngine::IndexedPropGetter(unsigned int index, const v8::PropertyCallbackIn
 	}
 }
 
+void IEngine::NamedPropGetter(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+    IEngine * engine = IEngine::GetEngine(info.GetIsolate());
+    if (!engine)
+        return;
+    v8::Isolate::Scope iso_scope(engine->isolate);
+    if (engine->NamedPropGetterCall) {
+        v8::String::Utf8Value str(property);
+        auto getterArgs = new IGetterArgs(info, *str);      
+        engine->NamedPropGetterCall(getterArgs);
+        if (getterArgs->error != "")
+            engine->Throw_Exception(getterArgs->error.c_str());
+    }
+}
+
 void IEngine::IndexedPropSetter(unsigned int index, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	info.GetReturnValue().SetNull();
@@ -689,6 +713,21 @@ void IEngine::IndexedPropSetter(unsigned int index, v8::Local<v8::Value> value, 
 		if (setterArgs->error != "")
 			engine->Throw_Exception(setterArgs->error.c_str());
 	}
+}
+
+void IEngine::NamedPropSetter(v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+    info.GetReturnValue().SetNull();
+    IEngine * engine = IEngine::GetEngine(info.GetIsolate());
+    if (!engine)
+        return;
+    v8::Isolate::Scope iso_scope(engine->isolate);
+    if (engine->NamedPropSetterCall) {
+        auto setterArgs = new ISetterArgs(info, property, value);
+        engine->NamedPropSetterCall(setterArgs);
+        if (setterArgs->error != "")
+            engine->Throw_Exception(setterArgs->error.c_str());
+    }
 }
 
 void IEngine::FieldGetter(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Value>& info)
@@ -1440,6 +1479,17 @@ ISetterArgs::ISetterArgs(const v8::PropertyCallbackInfo<void>& info, char * prop
 	iso = info.GetIsolate();
 	newVal = newValue;
 	setterVal = new IValue(iso, newVal, 0);
+}
+
+ISetterArgs::ISetterArgs(const v8::PropertyCallbackInfo<v8::Value>& info, v8::Local<v8::Value> value, v8::Local<v8::Value> newValue)
+{
+    IsIndexedProp = true;
+    v8::String::Utf8Value str(value);
+    propName = *str;
+    indexedPropInfo = &info;
+    iso = info.GetIsolate();
+    newVal = newValue;
+    setterVal = new IValue(iso, newVal, 0);
 }
 
 ISetterArgs::ISetterArgs(const v8::PropertyCallbackInfo<v8::Value>& info, int index, v8::Local<v8::Value> newValue)

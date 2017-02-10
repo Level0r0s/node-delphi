@@ -118,6 +118,9 @@ type
     //get object by index (e.g. 'Objects[i]' in 'Model.Objects[i]')
     class procedure callIndexedPropNumberGetter(args: IGetterArgs); static; stdcall;
     class procedure callIndexedPropNumberSetter(args: ISetterArgs); static; stdcall;
+    //get object by index name(e.g. 'Objects[ObjectName]' in 'Model.Objects[ObjectName]')
+    class procedure callNamedPropNumberGetter(args: IGetterArgs); static; stdcall;
+    class procedure callNamedPropNumberSetter(args: ISetterArgs); static; stdcall;
     class procedure callIntfGetter(args: IGetterArgs); static; stdcall;
     class procedure callIntfSetter(args: IIntfSetterArgs); static; stdcall;
     class procedure callIntfMethod(args: IMethodArgs); static; stdcall;
@@ -944,6 +947,118 @@ begin
   end;
 end;
 
+class procedure TJSEngine.callNamedPropNumberGetter(args: IGetterArgs);
+var
+  Eng: TJSEngine;
+  ClassDescr: TJSClass;
+  ClassTypeSlotItem: TObject;
+  Prop: TRttiIndexedProperty;
+  Result: TValue;
+  cl: TClass;
+  obj: TObject;
+begin
+  Eng := TJSEngine(args.GetEngine);
+  obj := nil;
+  Prop := nil;
+  cl := nil;
+  if not Assigned(Eng) then
+    raise EScriptEngineException.Create('Engine is not initialized: internal dll error');
+  try
+    ClassTypeSlotItem := TObject(args.GetDelphiClasstype);
+    if ClassTypeSlotItem is TClass then
+      cl := TClass(ClassTypeSlotItem);
+    try
+      if not Assigned(ClassTypeSlotItem) then
+        raise EScriptEngineException.Create('There is no object in classtype slot');
+      if ClassTypeSlotItem.ClassType = TRttiIndexedProperty then
+      begin
+        //prop pointer was writed in classtype slot;
+        Prop := TRttiIndexedProperty(ClassTypeSlotItem);
+        obj := args.GetDelphiObject;
+      end
+      else if Assigned(cl) then
+      begin
+        ClassDescr := Eng.FClasses.Items[cl];
+        Prop := ClassDescr.FDefaultIndexedProp;
+        if cl = Eng.FGlobal.ClassType then
+          obj := Eng.FGlobal
+        else
+          obj := args.GetDelphiObject;
+      end;
+      if Assigned(Prop) and Assigned(obj) then
+        Result := Prop.GetValue(obj, [PUtf8CharToString(args.GetPropName)]);
+    except
+      on E: EVariantTypeCastError do
+      begin
+        args.SetGetterResultUndefined;
+        Exit;
+      end;
+      on E: Exception do
+      begin
+        args.SetError(PAnsiChar(UTF8String(e.ClassName + ': ' + E.Message)));
+        Exit;
+      end;
+    end;
+    args.SetGetterResult(
+      TValueToJSValue(Result, Eng.FEngine, Eng.FDispatchList));
+  except
+    on E:Exception do
+    begin
+      if Assigned(eng.FLog) then
+      begin
+        if Eng.FIgnoredExceptions.IndexOf(e.ClassType) < 0 then
+          eng.FLog.Add('Uncaught exception: ' + E.Message)
+        {$ifdef DEBUG}
+        else
+          eng.FLog.Add('--' + E.Message);
+        {$endif}
+      end;
+    end;
+  end;
+end;
+
+class procedure TJSEngine.callNamedPropNumberSetter(args: ISetterArgs);
+var
+  Prop: TRttiIndexedProperty;
+  obj: TObject;
+  Eng: TJSEngine;
+begin
+  Eng := TJSEngine(args.GetEngine);
+  if not Assigned(Eng) then
+    raise EScriptEngineException.Create('Engine is not initialized: internal dll error');
+  try
+    //prop pointer will be writed in classtype slot;
+    Prop := TRttiIndexedProperty(args.GetDelphiClasstype);
+    if not Prop.IsWritable then
+      Exit;
+    obj := args.GetDelphiObject;
+    try
+      Prop.SetValue(obj, [PUtf8CharToString(args.GetPropName)], JsValToTValue(args.GetValue, Prop.PropertyType));
+    except
+      on E: EArgumentOutOfRangeException do
+        Eng.FLog.Add('Argumrent out of range');
+      on E: Exception do
+      begin
+        args.SetError(PAnsiChar(UTF8String(e.ClassName + ': ' + E.Message)));
+        Exit;
+      end;
+    end;
+  except
+    on E:Exception do
+    begin
+      if Assigned(eng.FLog) then
+      begin
+        if Eng.FIgnoredExceptions.IndexOf(e.ClassType) < 0 then
+          eng.FLog.Add('Uncaught exception: ' + E.Message)
+        {$ifdef DEBUG}
+        else
+          eng.FLog.Add('--' + E.Message);
+        {$endif}
+      end;
+    end;
+  end;
+end;
+
 class procedure TJSEngine.callPropSetter(args: ISetterArgs);
 
   procedure SetValueToObject(obj: TObject; value: IValue; Prop: TRttiProperty);
@@ -1054,6 +1169,8 @@ begin
   FEngine.SetFieldSetterCallBack(callFieldSetter);
   FEngine.SetIndexedPropGetterCallBack(callIndexedPropNumberGetter);
   FEngine.SetIndexedPropSetterCallBack(callIndexedPropNumberSetter);
+  FEngine.SetNamedPropGetterCallBack(callNamedPropNumberGetter);
+  FEngine.SetNamedPropSetterCallBack(callNamedPropNumberSetter);
   FEngine.SetInterfaceGetterCallBack(callIntfGetter);
   FEngine.SetInterfaceSetterCallBack(callIntfSetter);
   FEngine.SetInterfaceMethodCallBack(callIntfMethod);
